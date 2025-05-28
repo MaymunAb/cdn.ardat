@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="index.html" id="back-button">⬅ Back to Browser</a>
+  <h1>File Viewer</h1>
+  <pre id="file-content">Loading...</pre>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const file = params.get('file');
+    fetch(`/file?path=${encodeURIComponent(file)}`)
+      .then(res => res.text())
+      .then(text => {
+        document.getElementById('file-content').textContent = text;
+      })
+      .catch(err => {
+        document.getElementById('file-content').textContent = `Error: ${err}`;
+      });
+  </script>
+</body>
+</html>

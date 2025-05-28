@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dosyalar</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Dosya Görüntüleyici</h1>
+  <h5>şu anda bağlı olduğunuz ardat sunucusu: smartardat-giresun-12</h5>
+  <a id="back-button" href="#">⬅ Back</a>
+  <div id="browser"></div>
+
+ <script>
+  let currentPath = '';
+
+  function getParentPath(path) {
+    const parts = path.split('/').filter(Boolean);
+    parts.pop();
+    return parts.join('/');
+  }
+
+  function load(path = '') {
+    currentPath = path;
+
+    if (path) {
+      document.getElementById('back-button').style.display = 'inline-block';
+      document.getElementById('back-button').href = "#";
+      document.getElementById('back-button').onclick = (e) => {
+        e.preventDefault();
+        load(getParentPath(currentPath));
+      };
+    } else {
+      document.getElementById('back-button').style.display = 'none';
+    }
+
+    fetch(`/list?path=${encodeURIComponent(path)}`)
+      .then(res => res.json())
+      .then(data => {
+        const browser = document.getElementById('browser');
+        browser.innerHTML = '';
+        data.items.forEach(item => {
+          const el = document.createElement('div');
+          el.className = 'item';
+
+          const img = document.createElement('img');
+          const label = document.createElement('div');
+          label.textContent = item.name;
+
+          const fullPath = `${data.path}/${item.name}`.replace(/^\/+/, '');
+
+          if (item.type === 'folder') {
+            img.src = 'https://cdn-icons-png.flaticon.com/512/716/716784.png';
+            el.onclick = () => load(fullPath);
+            el.appendChild(img);
+            el.appendChild(label);
+          } else {
+            const ext = item.name.toLowerCase().split('.').pop();
+            let iconUrl;
+
+            if (ext === 'pdf') {
+              iconUrl = 'https://cdn-icons-png.flaticon.com/512/337/337946.png';
+              img.src = iconUrl;
+              el.appendChild(img);
+              el.appendChild(label);
+
+              const btn1 = document.createElement('button');
+              btn1.textContent = 'View PDF';
+              btn1.onclick = (e) => {
+                e.stopPropagation();
+                window.open(`/file?path=${encodeURIComponent(fullPath)}`, '_blank');
+              };
+
+              const btn2 = document.createElement('button');
+              btn2.textContent = 'Download PDF';
+              btn2.onclick = (e) => {
+                e.stopPropagation();
+                window.location.href = `/download?path=${encodeURIComponent(fullPath)}`;
+              };
+
+              el.appendChild(btn1);
+              el.appendChild(btn2);
+
+            } else if (ext === 'txt') {
+              iconUrl = 'https://cdn-icons-png.flaticon.com/512/3022/3022255.png';
+              img.src = iconUrl;
+              el.onclick = () => {
+                window.location.href = `view.html?file=${encodeURIComponent(fullPath)}`;
+              };
+              el.appendChild(img);
+              el.appendChild(label);
+			      } else if (ext === 'googlelink') {
+              iconUrl = 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Youtube_logo.png';
+              img.src = iconUrl;
+              el.onclick = (e) => {
+              e.stopPropagation();
+              fetch(`/link?path=${encodeURIComponent(fullPath)}`)
+                .then(res => res.text())
+                .then(link => {
+                  if (link.startsWith('http')) {
+                    window.open(link, '_blank');
+                  } else {
+                    alert('Invalid link in .googlelink file.');
+                  }
+                })
+                .catch(() => alert('Failed to load link.'));
+            };
+
+             el.appendChild(img);
+            el.appendChild(label);
+            } else {
+              iconUrl = 'https://cdn-icons-png.flaticon.com/512/337/337948.png';
+              img.src = iconUrl;
+              el.onclick = () => {
+                window.location.href = `view.html?file=${encodeURIComponent(fullPath)}`;
+              };
+              el.appendChild(img);
+              el.appendChild(label);
+            }
+          }
+
+          browser.appendChild(el);
+        });
+      });
+  }
+
+  load();
+</script>
+</body>
+</html>
